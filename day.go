@@ -11,6 +11,7 @@ func getDays() map[int]Day {
 	days[1] = &solutions.Day1{}
 	days[2] = &solutions.Day2{}
 	days[3] = &solutions.Day3{}
+	days[4] = &solutions.Day4{}
 
 	return days
 }
