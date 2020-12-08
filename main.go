@@ -9,8 +9,9 @@ import (
 func main() {
 
 	days := getDays()
-	start := 8
+	start := 1
 	max := 8
+	accTime := .0
 	for i := start; i <= max; i++ {
 		fName := fmt.Sprintf("./inputs/%d.txt", i)
 		data, err := ioutil.ReadFile(fName)
@@ -23,9 +24,11 @@ func main() {
 			fmt.Println(fmt.Sprintf("Day%d Struct not defined yet", i))
 			continue
 		}
-		start := time.Now()
+		startDay := time.Now()
 		results, err := day.Handle(string(data))
-		fmt.Println(fmt.Sprintf("Day %d results:", i))
+		endDay := time.Since(startDay)
+		accTime += endDay.Seconds()
+		fmt.Println(fmt.Sprintf("# Day %d results (%s):", i, endDay))
 		if err != nil {
 			fmt.Println(err)
 		} else {
@@ -33,8 +36,8 @@ func main() {
 				fmt.Println(fmt.Sprintf("%d: %s", index+1, result))
 			}
 		}
-		runtime := time.Since(start)
-		fmt.Println(fmt.Sprintf("Execution Time %s", runtime))
 		fmt.Print("\n")
 	}
+
+	fmt.Println(fmt.Sprintf("---\nAOC Execution Time %fs", accTime))
 }
