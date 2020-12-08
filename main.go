@@ -3,6 +3,7 @@ package main
 import (
 	"fmt"
 	"io/ioutil"
+	"time"
 )
 
 func main() {
@@ -22,6 +23,7 @@ func main() {
 			fmt.Println(fmt.Sprintf("Day%d Struct not defined yet", i))
 			continue
 		}
+		start := time.Now()
 		results, err := day.Handle(string(data))
 		fmt.Println(fmt.Sprintf("Day %d results:", i))
 		if err != nil {
@@ -31,6 +33,8 @@ func main() {
 				fmt.Println(fmt.Sprintf("%d: %s", index+1, result))
 			}
 		}
+		runtime := time.Since(start)
+		fmt.Println(fmt.Sprintf("Execution Time %s", runtime))
 		fmt.Print("\n")
 	}
 }
