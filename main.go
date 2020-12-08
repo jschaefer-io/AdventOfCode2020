@@ -9,8 +9,8 @@ import (
 func main() {
 
 	days := getDays()
-	start := 7
-	max := 7
+	start := 8
+	max := 8
 	for i := start; i <= max; i++ {
 		fName := fmt.Sprintf("./inputs/%d.txt", i)
 		data, err := ioutil.ReadFile(fName)
