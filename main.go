@@ -9,8 +9,8 @@ import (
 func main() {
 
 	days := getDays()
-	start := 1
-	max := 8
+	start := 9
+	max := 9
 	accTime := .0
 	for i := start; i <= max; i++ {
 		fName := fmt.Sprintf("./inputs/%d.txt", i)
@@ -19,11 +19,11 @@ func main() {
 			fmt.Println(fmt.Sprintf("Could not read file %s", fName))
 			continue
 		}
-		day, ok := days[i]
-		if !ok {
+		if i > len(days) {
 			fmt.Println(fmt.Sprintf("Day%d Struct not defined yet", i))
 			continue
 		}
+		day := days[i-1]
 		startDay := time.Now()
 		results, err := day.Handle(string(data))
 		endDay := time.Since(startDay)

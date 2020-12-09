@@ -6,16 +6,17 @@ type Day interface {
 	Handle(string) ([]string, error)
 }
 
-func getDays() map[int]Day {
-	days := make(map[int]Day)
-	days[1] = &solutions.Day1{}
-	days[2] = &solutions.Day2{}
-	days[3] = &solutions.Day3{}
-	days[4] = &solutions.Day4{}
-	days[5] = &solutions.Day5{}
-	days[6] = &solutions.Day6{}
-	days[7] = &solutions.Day7{}
-	days[8] = &solutions.Day8{}
-
+func getDays() []Day {
+	days := []Day{
+		&solutions.Day1{},
+		&solutions.Day2{},
+		&solutions.Day3{},
+		&solutions.Day4{},
+		&solutions.Day5{},
+		&solutions.Day6{},
+		&solutions.Day7{},
+		&solutions.Day8{},
+		&solutions.Day9{},
+	}
 	return days
 }
