@@ -2,6 +2,7 @@ package solutions
 
 import (
 	"fmt"
+	"sort"
 	"strconv"
 	"strings"
 )
@@ -25,38 +26,18 @@ func (d *Day9) init(s string) error {
 		}
 		d.nums[i] = num
 	}
-
-	// Create result list
-	d.sums = make(map[int][][2]int)
-	for i := 0; i < d.count; i++ {
-		for u := i + 1; u < d.count; u++ {
-			sum := d.nums[i] + d.nums[u]
-			list, ok := d.sums[sum]
-			if !ok {
-				list = make([][2]int, 0)
-			}
-			d.sums[sum] = append(list, [2]int{
-				i,
-				u,
-			})
-		}
-	}
 	return nil
 }
 
-func (d *Day9) checkPosition(position int, inRange int) bool {
-	pairs, ok := d.sums[d.nums[position]]
-	if !ok {
-		return false
-	}
-
-	minIndex := position - inRange
-	for _, pair := range pairs {
-		if pair[0] >= minIndex && pair[1] >= minIndex && pair[0] < position && pair[1] < position {
-			return true
+func (d *Day9) checkPosition(position int, inRange int, target int) bool {
+	list := d.nums[position-inRange : position]
+	for i := 0; i < inRange; i++ {
+		for u := i + 1; u < inRange; u++ {
+			if list[u]+list[i] == target {
+				return true
+			}
 		}
 	}
-
 	return false
 }
 
@@ -64,7 +45,7 @@ func (d *Day9) executeA() int {
 	pre := 25
 	check := 25
 	for i := pre; i < d.count; i++ {
-		if !d.checkPosition(i, check) {
+		if !d.checkPosition(i, check, d.nums[i]) {
 			return d.nums[i]
 		}
 	}
@@ -73,33 +54,28 @@ func (d *Day9) executeA() int {
 }
 
 func (d *Day9) executeB(target int) int {
-	for i := 0; i < d.count; i++ {
-		min := d.nums[i]
-		max := d.nums[i]
-		sum := d.nums[i]
-		for u := i + 1; u < d.count; u++ {
-			sum += d.nums[u]
-
-			// Update max values
-			if d.nums[u] < min {
-				min = d.nums[u]
+	a := 0
+	b := 1
+	sum := d.nums[a]
+	for a < d.count && b < d.count {
+		if sum < target {
+			sum += d.nums[b]
+			b++
+			continue
+		} else if sum > target {
+			sum -= d.nums[a]
+			a++
+			continue
+		} else {
+			resList := make([]int, b-a)
+			for i := 0; i < b-a; i++ {
+				resList[i] = d.nums[i+a]
 			}
-			if d.nums[u] > max {
-				max = d.nums[u]
-			}
-
-			// Continue if over target
-			if sum > target {
-				continue
-			}
-
-			// return result if target reached
-			if sum == target {
-				return min + max
-			}
+			sort.Ints(resList)
+			return resList[0] + resList[b-a-1]
 		}
 	}
-	return 0
+	return -1
 }
 
 func (d *Day9) Handle(s string) ([]string, error) {
