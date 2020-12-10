@@ -43,27 +43,61 @@ func (d *Day10) executeA() int {
 }
 
 func (d *Day10) executeB() int {
-	return 1
-	//aCount := len(d.adapters)
-	//fullList := make([]int, 0)
-	//fullList = append(fullList, 0)
-	//fullList = append(fullList, d.adapters...)
-	//fullList = append(fullList, d.adapters[aCount-1]+3)
-	//fCount := len(fullList)
-	//
-	//res := 1
-	//for i := 0; i < fCount - 1; i++{
-	//	pos := 0
-	//	for u := i+1; u < fCount; u++{
-	//		if fullList[i] + 3 < fullList[u] {
-	//			break
-	//		}
-	//		pos++
-	//	}
-	//	fmt.Printf("Possible Steprs from %d : %d\n", fullList[i], pos)
-	//	res *= pos
-	//}
-	//return res
+
+	// Build sorted list of all powers numbers
+	aCount := len(d.adapters)
+	fullList := make([]int, 0)
+	fullList = append(fullList, 0)
+	fullList = append(fullList, d.adapters...)
+	fullList = append(fullList, d.adapters[aCount-1]+3)
+	fCount := len(fullList)
+
+	// calculate the number of possibilities
+	// for one adapter to to the next higher one
+	counts := make(map[int][]int)
+	for i := fCount - 2; i >= 0; i-- {
+		pos := make([]int, 0)
+		for u := i + 1; u < fCount; u++ {
+			if fullList[i]+3 < fullList[u] {
+				break
+			}
+			pos = append(pos, u)
+		}
+		counts[i] = pos
+	}
+
+	dP := make(map[int][2]int)
+	var countPos2 func(index int) (int, int)
+	countPos2 = func(index int) (int, int) {
+		next := counts[index]
+		count := len(next)
+
+		// Ending condition
+		if count == 0 {
+			return 0, 1
+		}
+
+		// check dP
+		v, ok := dP[index]
+		if ok {
+			return v[0], v[1]
+		}
+
+		// Resolve recursively
+		res := 0
+		for _, v := range next {
+			_, r := countPos2(v)
+			res += r
+		}
+		dP[index] = [2]int{
+			count,
+			res,
+		}
+		return count, res
+	}
+
+	_, res := countPos2(0)
+	return res
 }
 
 func (d *Day10) Handle(s string) ([]string, error) {
