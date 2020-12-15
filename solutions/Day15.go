@@ -44,9 +44,6 @@ func (d *Day15) Handle(s string) ([]string, error) {
 			say = list[1] - list[0]
 		}
 		list, ok := d.record[say]
-		if !ok {
-			list = [2]int{}
-		}
 		d.first = !ok
 		list[0] = list[1]
 		list[1] = d.current
