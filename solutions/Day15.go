@@ -8,14 +8,13 @@ import (
 
 type Day15 struct {
 	record  map[int][2]int
-	turns   map[int]int
 	current int
 	first   bool
+	lastSay int
 }
 
 func (d *Day15) init(s string) error {
 	d.record = make(map[int][2]int)
-	d.turns = make(map[int]int)
 	d.first = true
 	d.current = 1
 	for _, n := range strings.Split(s, ",") {
@@ -25,6 +24,7 @@ func (d *Day15) init(s string) error {
 		}
 		d.record[num] = [2]int{0, d.current}
 		d.current++
+		d.lastSay = num
 	}
 	return nil
 }
@@ -36,11 +36,11 @@ func (d *Day15) Handle(s string) ([]string, error) {
 	}
 	results := make([]string, 0)
 
-	for  {
+	for {
 		var say int
 		var list [2]int
 		if !d.first {
-			list = d.record[d.turns[d.current-1]]
+			list = d.record[d.lastSay]
 			say = list[1] - list[0]
 		}
 		list, ok := d.record[say]
@@ -51,15 +51,15 @@ func (d *Day15) Handle(s string) ([]string, error) {
 		list[0] = list[1]
 		list[1] = d.current
 		d.record[say] = list
-		d.turns[d.current] = say
 		if d.current == 2020 {
 			results = append(results, fmt.Sprintf("%d", say))
 		}
-		if d.current == 3000000 {
+		if d.current == 30000000 {
 			results = append(results, fmt.Sprintf("%d", say))
 			break
 		}
 		d.current++
+		d.lastSay = say
 	}
 
 	return results, nil
