@@ -1,8 +1,8 @@
 package solutions
 
 import (
+	"errors"
 	"fmt"
-	"github.com/pkg/errors"
 	"math"
 	"strings"
 )
