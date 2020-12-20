@@ -1,6 +1,7 @@
 package solutions
 
 import (
+	"errors"
 	"fmt"
 	"math"
 	"regexp"
@@ -141,7 +142,8 @@ func (d *Day20) sortTiles() {
 	}
 }
 
-func (d *Day20) executeA() int {
+func (d *Day20) executeA() (int, []int) {
+	corners := make([]int, 0)
 	res := 1
 	for id, tile := range d.tiles {
 		c := 0
@@ -152,13 +154,65 @@ func (d *Day20) executeA() int {
 		}
 		if c == 2 {
 			res *= id
+			corners = append(corners, id)
 		}
 	}
-	return res
+	return res, corners
 }
 
-func (d *Day20) executeB() int {
-	//fmt.Println("test")
+func (d *Day20) resolveVariant(id int) (int, error) {
+	for _, tile := range d.tiles {
+		for _, conn := range tile.connections {
+			if conn != nil && conn.tile == id {
+				return conn.variation, nil
+			}
+		}
+	}
+	return 0, errors.New("could not resolve variant")
+}
+
+func (d *Day20) getNextTile(con connection, a, b int) []connection {
+	visited := make(map[int]struct{})
+	list := []connection{
+		con,
+	}
+	cId := con.tile
+	for x := 0; x < d.dimensions-1; x++ {
+		visited[cId] = struct{}{}
+		cTile := d.tiles[cId]
+
+		next := cTile.connections[a]
+		if next == nil {
+			next = cTile.connections[b]
+		}
+		if _, ok := visited[next.tile]; ok {
+			next = cTile.connections[b]
+		}
+		if next == nil {
+			break
+		}
+		cId = next.tile
+		list = append(list, *next)
+	}
+	return list
+}
+
+func (d *Day20) executeB(corners []int) int {
+	variant, err := d.resolveVariant(corners[0])
+	if err != nil {
+		return -1
+	}
+	initConn := connection{
+		tile:      corners[0],
+		variation: variant,
+	}
+	rows := d.getNextTile(initConn, 2, 0)
+	for _, rowConn := range rows {
+		cols := d.getNextTile(rowConn, 1, 3)
+		fmt.Println(cols)
+	}
+
+	//fmt.Println(corner)
 	return 1
 }
 
@@ -170,7 +224,8 @@ func (d *Day20) Handle(s string) ([]string, error) {
 	d.sortTiles()
 
 	results := make([]string, 0)
-	results = append(results, fmt.Sprintf("%d", d.executeA()))
-	results = append(results, fmt.Sprintf("%d", d.executeB()))
+	a, corners := d.executeA()
+	results = append(results, fmt.Sprintf("%d", a))
+	results = append(results, fmt.Sprintf("%d", d.executeB(corners)))
 	return results, nil
 }
