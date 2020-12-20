@@ -204,18 +204,6 @@ func (d *Day20) findAdjacentTile(searchTile *tile, variation int) []connection {
 	return connections
 }
 
-func (d *Day20) executeA() (int, []int) {
-	list := make([]int, 0)
-	count := 1
-	for id, t := range d.tiles {
-		if len(d.findAdjacentTile(t, 0)) == 2 {
-			count *= id
-			list = append(list, id)
-		}
-	}
-	return count, list
-}
-
 func (d *Day20) getFullMap(startTile int) [][]connection {
 	passed := make(map[int]struct{})
 	baseConn := connection{
@@ -335,6 +323,18 @@ func (d *Day20) countRoughWater(image [][]bool) int {
 	return count
 }
 
+func (d *Day20) executeA() (int, []int) {
+	list := make([]int, 0)
+	count := 1
+	for id, t := range d.tiles {
+		if len(d.findAdjacentTile(t, 0)) == 2 {
+			count *= id
+			list = append(list, id)
+		}
+	}
+	return count, list
+}
+
 func (d *Day20) executeB(corners []int) int {
 	startTile, _ := d.findTopLeftTile(corners)
 	fullMap := d.getFullMap(startTile)
@@ -343,7 +343,7 @@ func (d *Day20) executeB(corners []int) int {
 		img, _ := d.getImageVariant(fullImage, i)
 		mCount := d.findMonster(img)
 		if mCount > 0 {
-			return d.countRoughWater(img) - len(d.monsterMap.imageMap) * mCount
+			return d.countRoughWater(img) - len(d.monsterMap.imageMap)*mCount
 		}
 	}
 	return -1
