@@ -14,25 +14,22 @@ type Day19 struct {
 }
 
 type rule interface {
-	resolveToList(d *Day19) []string
+	resolveToRegex(d *Day19) string
 }
 
 type ruleGroup struct {
-	rules        []rule
-	resolveCount int
-	count        int
+	rules []rule
 }
 
-func (r *ruleGroup) resolveToList(d *Day19) []string {
-	list := make([][]string, 0)
+func (r *ruleGroup) resolveToRegex(d *Day19) string {
+	list := make([]string, 0)
 	for _, r := range r.rules {
-		list = append(list, r.resolveToList(d))
+		list = append(list, r.resolveToRegex(d))
 	}
 	if len(list) == 1 {
 		return list[0]
 	}
-	r.count++
-	return buildStringVariations(0, list, d)
+	return "(" + strings.Join(list, "") + ")"
 }
 
 // literal rules
@@ -40,8 +37,8 @@ type literalRule struct {
 	literal string
 }
 
-func (l literalRule) resolveToList(d *Day19) []string {
-	return []string{l.literal}
+func (l literalRule) resolveToRegex(d *Day19) string {
+	return l.literal
 }
 
 // reference rules
@@ -49,20 +46,15 @@ type referenceRule struct {
 	reference string
 }
 
-func (l referenceRule) resolveToList(d *Day19) []string {
+func (l referenceRule) resolveToRegex(d *Day19) string {
 	list := make([]string, 0)
-	for _, g := range d.rules[l.reference] {
-		rules := g.resolveToList(d)
-		for _, r := range rules {
-			if len(r) > d.maxMsgLength {
-				continue
-			}
-			list = append(list, r)
-		}
-
+	for _, r := range d.rules[l.reference] {
+		list = append(list, r.resolveToRegex(d))
 	}
-	d.dynResolver[l.reference] = list
-	return list
+	if len(list) == 1 {
+		return list[0]
+	}
+	return "(" + strings.Join(list, "|") + ")"
 }
 
 // Solution
@@ -108,45 +100,63 @@ func (d *Day19) init(s string) {
 	}
 }
 
-func buildStringVariations(index int, list [][]string, d *Day19) []string {
-	res := make([]string, 0)
-	for _, c := range list[index] {
-		if index+1 >= len(list) {
-			res = append(res, c)
-		} else {
-			for _, t := range buildStringVariations(index+1, list, d) {
-				sum := c + t
-				if len(sum) > d.maxMsgLength {
-					continue
-				}
-				res = append(res, c+t)
-			}
-		}
-	}
-	return res
+func (d *Day19) getRegex(num int) regexp.Regexp {
+	r := referenceRule{reference: "0"}
+	exp := fmt.Sprintf("^%s$", r.resolveToRegex(d))
+	regex := regexp.MustCompile(exp)
+	return *regex
 }
 
-func (d *Day19) executeA() int {
-	checkList := make(map[string]struct{})
-	r := referenceRule{reference: "0"}
-	for _, list := range r.resolveToList(d) {
-		checkList[list] = struct{}{}
-	}
-
+func (d *Day19) execute(rule int) int {
+	exp := d.getRegex(rule)
 	count := 0
 	for _, msg := range d.messages {
-		if _, ok := checkList[msg]; ok {
+		if exp.MatchString(msg) {
 			count++
 		}
 	}
 	return count
 }
 
+func (d *Day19) executeA() int {
+	return d.execute(0)
+}
+
+func (d *Day19) executeB() int {
+	count := 5
+
+	// Update rule 8 to a finite recursion
+	group8 := make([]ruleGroup, 0)
+	for i := 1; i <= count; i++ {
+		r := ruleGroup{}
+		for u := 0; u < i; u++ {
+			r.rules = append(r.rules, referenceRule{"42"})
+		}
+		group8 = append(group8, r)
+	}
+	d.rules["8"] = group8
+
+	// Update rule 11 to a finite recursion
+	group11 := make([]ruleGroup, 0)
+	for i := 1; i <= count; i++ {
+		r := ruleGroup{}
+		for u := 0; u < i; u++ {
+			r.rules = append(r.rules, referenceRule{"42"})
+		}
+		for u := 0; u < i; u++ {
+			r.rules = append(r.rules, referenceRule{"31"})
+		}
+		group11 = append(group11, r)
+	}
+	d.rules["11"] = group11
+
+	return d.execute(0)
+}
+
 func (d *Day19) Handle(s string) ([]string, error) {
 	d.init(s)
-
 	results := make([]string, 0)
 	results = append(results, fmt.Sprintf("%d", d.executeA()))
-	//results = append(results, fmt.Sprintf("%d", d.executeB()))
+	results = append(results, fmt.Sprintf("%d", d.executeB()))
 	return results, nil
 }
