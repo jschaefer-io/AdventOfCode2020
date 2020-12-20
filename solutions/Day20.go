@@ -37,7 +37,7 @@ func newTile(image [][]bool) *tile {
 		}
 		if image[x][offset] {
 			baseSignature[1] += 1 << (offset - x)
-			revSignature[1] += 1 << x
+			revSignature[3] += 1 << x
 		}
 		if image[offset][x] {
 			baseSignature[2] += 1 << (offset - x)
@@ -45,7 +45,7 @@ func newTile(image [][]bool) *tile {
 		}
 		if image[x][0] {
 			baseSignature[3] += 1 << (offset - x)
-			revSignature[3] += 1 << x
+			revSignature[1] += 1 << x
 		}
 	}
 
@@ -111,6 +111,7 @@ func (d *Day20) findAdjacentTiles(tileId int, variationIndex int) []*connection 
 
 					tiles = append(tiles, &conn)
 					currentTile.connections[directionIndex] = &conn
+					break
 				}
 			}
 		}
@@ -160,6 +161,48 @@ func (d *Day20) executeA() (int, []int) {
 	return res, corners
 }
 
+func (d *Day20) getImageVariant(id, variant int) [][]bool {
+	tile := d.tiles[id]
+	tileDimensions := len(tile.image)
+
+	image := make([][]bool, 0)
+	for a := 0; a < tileDimensions; a++ {
+		row := make([]bool, 0)
+		for b := 0; b < tileDimensions; b++ {
+			t := tile.image[a][b]
+			switch variant {
+			case 1:
+				t = tile.image[a][tileDimensions-1-b]
+				break
+			case 2:
+				t = tile.image[b][tileDimensions-1-a]
+				break
+			case 3:
+				t = tile.image[tileDimensions-1-b][tileDimensions-1-a]
+				break
+			case 4:
+				t = tile.image[tileDimensions-1-a][b]
+				break
+			case 5:
+				t = tile.image[tileDimensions-1-a][tileDimensions-1-b]
+				break
+			case 6:
+				t = tile.image[b][a]
+				break
+			case 7:
+				t = tile.image[tileDimensions-1-b][a]
+				break
+			default:
+				t = tile.image[a][b]
+				break
+			}
+			row = append(row, t)
+		}
+		image = append(image, row)
+	}
+	return image
+}
+
 func (d *Day20) resolveVariant(id int) (int, error) {
 	for _, tile := range d.tiles {
 		for _, conn := range tile.connections {
@@ -197,7 +240,22 @@ func (d *Day20) getNextTile(con connection, a, b int) []connection {
 	return list
 }
 
+func (d *Day20) printImage(image [][]bool) {
+	for y := 0; y < len(image); y++ {
+		for x := 0; x < len(image[y]); x++ {
+			if image[y][x] {
+				fmt.Print("#")
+			} else {
+				fmt.Print(".")
+			}
+		}
+		fmt.Print("\n")
+	}
+	fmt.Print("\n")
+}
+
 func (d *Day20) executeB(corners []int) int {
+	corners[0] = 1951
 	variant, err := d.resolveVariant(corners[0])
 	if err != nil {
 		return -1
@@ -209,7 +267,12 @@ func (d *Day20) executeB(corners []int) int {
 	rows := d.getNextTile(initConn, 2, 0)
 	for _, rowConn := range rows {
 		cols := d.getNextTile(rowConn, 1, 3)
-		fmt.Println(cols)
+		for _, t := range cols {
+			fmt.Println(t.tile, t.variation)
+			d.printImage(d.getImageVariant(t.tile, t.variation))
+		}
+		//fmt.Println(cols)
+		break
 	}
 
 	//fmt.Println(corner)
@@ -221,11 +284,18 @@ func (d *Day20) Handle(s string) ([]string, error) {
 	if err != nil {
 		return nil, err
 	}
+
+	//for id, t := range d.tiles {
+	//	fmt.Println(id)
+	//	fmt.Println(t.signatures)
+	//	fmt.Println()
+	//}
+
 	d.sortTiles()
 
 	results := make([]string, 0)
-	a, corners := d.executeA()
+	a, _ := d.executeA()
 	results = append(results, fmt.Sprintf("%d", a))
-	results = append(results, fmt.Sprintf("%d", d.executeB(corners)))
+	//results = append(results, fmt.Sprintf("%d", d.executeB(corners)))
 	return results, nil
 }
