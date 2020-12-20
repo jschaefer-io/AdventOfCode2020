@@ -1,6 +1,7 @@
 package solutions
 
 import (
+	"errors"
 	"fmt"
 	"math"
 	"regexp"
@@ -140,7 +141,7 @@ func (d *Day20) printImage(image [][]bool) {
 	for y := 0; y < len(image); y++ {
 		for x := 0; x < len(image[y]); x++ {
 			if image[y][x] {
-				fmt.Print("0")
+				fmt.Print("#")
 			} else {
 				fmt.Print(".")
 			}
@@ -193,17 +194,17 @@ func (d *Day20) executeA() (int, []int) {
 	return count, list
 }
 
-func (d *Day20) getFullMap(startTile int) [][]int {
+func (d *Day20) getFullMap(startTile int) [][]connection {
 	passed := make(map[int]struct{})
 	baseConn := connection{
 		to:        startTile,
 		variation: 0,
 	}
-	fullMap := make([][]int, d.dimensions)
+	fullMap := make([][]connection, d.dimensions)
 	for y := 0; y < d.dimensions; y++ {
 		rowConn := baseConn
-		row := make([]int, d.dimensions)
-		row[0] = baseConn.to
+		row := make([]connection, d.dimensions)
+		row[0] = baseConn
 		for x := 1; x <= d.dimensions; x++ {
 			passed[baseConn.to] = struct{}{}
 
@@ -213,7 +214,7 @@ func (d *Day20) getFullMap(startTile int) [][]int {
 				}
 				if conn.direction == 1 || conn.direction == 3 {
 					baseConn = conn
-					row[x] = conn.to
+					row[x] = conn
 				}
 			}
 		}
@@ -230,11 +231,65 @@ func (d *Day20) getFullMap(startTile int) [][]int {
 	return fullMap
 }
 
-func (d *Day20) executeB(corners []int) int {
-	fullMap := d.getFullMap(1951)
-	fRow := fullMap[0]
+func (d *Day20) findTopLeftTile(corners []int) (int, error) {
+	for _, corner := range corners {
+		res := d.findAdjacentTile(d.tiles[corner], 0)
+		if len(res) != 2 {
+			continue
+		}
+		if res[0].direction == 1 && res[1].direction == 2 || res[0].direction == 2 && res[1].direction == 1 {
+			return corner, nil
+		}
+	}
+	return -1, errors.New("top left tile could not be identified")
+}
 
-	fmt.Println(fRow)
+func (d *Day20) removeBorder(ogImage [][]bool) [][]bool {
+	count := len(ogImage)
+	image := make([][]bool, count-2)
+	for y := 1; y < count-1; y++ {
+		row := make([]bool, count-2)
+		for x := 1; x < count-1; x++ {
+			row[x-1] = ogImage[y][x]
+		}
+		image[y-1] = row
+	}
+	return image
+
+}
+
+func (d *Day20) buildFullImage(fullMap [][]connection) [][]bool {
+	fullImage := make([][]bool, 0)
+	for _, partialMap := range fullMap {
+		count := 0
+		rowMap := make(map[int][]bool)
+		for _, conn := range partialMap {
+			image := d.removeBorder(d.tiles[conn.to].images[conn.variation])
+			for i, row := range image {
+				list, ok := rowMap[i]
+				if !ok {
+					list = make([]bool, 0)
+					count = i + 1
+				}
+				rowMap[i] = append(list, row...)
+			}
+		}
+		for i := 0; i < count; i++ {
+			fullImage = append(fullImage, rowMap[i])
+		}
+	}
+	return fullImage
+}
+
+func (d *Day20) executeB(corners []int) int {
+	startTile, _ := d.findTopLeftTile(corners)
+	fullMap := d.getFullMap(startTile)
+	fullImage := d.buildFullImage(fullMap)
+
+	for i := 0; i < 8; i++ {
+		img, _ := d.getImageVariant(fullImage, i)
+		d.printImage(img)
+	}
 
 	return 0
 }
