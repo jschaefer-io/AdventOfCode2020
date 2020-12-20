@@ -1,7 +1,6 @@
 package solutions
 
 import (
-	"errors"
 	"fmt"
 	"math"
 	"regexp"
@@ -15,57 +14,14 @@ type Day20 struct {
 }
 
 type tile struct {
-	image       [][]bool
-	signatures  [][4]int
-	connections [4]*connection
+	images [][][]bool
+	edges  [][4]int
 }
 
 type connection struct {
-	tile      int
+	to        int
+	direction int
 	variation int
-}
-
-func newTile(image [][]bool) *tile {
-	dimension := len(image)
-	baseSignature := [4]int{}
-	revSignature := [4]int{}
-	offset := dimension - 1
-	for x := 0; x < dimension; x++ {
-		if image[0][x] {
-			baseSignature[0] += 1 << (offset - x)
-			revSignature[0] += 1 << x
-		}
-		if image[x][offset] {
-			baseSignature[1] += 1 << (offset - x)
-			revSignature[3] += 1 << x
-		}
-		if image[offset][x] {
-			baseSignature[2] += 1 << (offset - x)
-			revSignature[2] += 1 << x
-		}
-		if image[x][0] {
-			baseSignature[3] += 1 << (offset - x)
-			revSignature[1] += 1 << x
-		}
-	}
-
-	variations := make([][4]int, 0)
-	for rotation := 0; rotation < 4; rotation++ {
-		baseVariation := [4]int{}
-		revVariation := [4]int{}
-		for i := 0; i < 4; i++ {
-			index := (rotation + i) % 4
-			baseVariation[i] = baseSignature[index]
-			revVariation[i] = revSignature[index]
-		}
-		variations = append(variations, baseVariation)
-		variations = append(variations, revVariation)
-	}
-
-	return &tile{
-		image:      image,
-		signatures: variations,
-	}
 }
 
 func (d *Day20) init(s string) error {
@@ -86,165 +42,105 @@ func (d *Day20) init(s string) error {
 			}
 			image = append(image, row)
 		}
-		d.tiles[num] = newTile(image)
+
+		images := make([][][]bool, 0)
+		edges := make([][4]int, 0)
+		for i := 0; i < 8; i++ {
+			img, edge := d.getImageVariant(image, i)
+			images = append(images, img)
+			edges = append(edges, edge)
+		}
+
+		d.tiles[num] = &tile{
+			images: images,
+			edges:  edges,
+		}
 	}
 	d.dimensions = int(math.Sqrt(float64(len(d.tiles))))
 	return nil
 }
 
-func (d *Day20) findAdjacentTiles(tileId int, variationIndex int) []*connection {
-	currentTile := d.tiles[tileId]
-	v := currentTile.signatures[variationIndex]
+func (d *Day20) getImageVariant(baseImage [][]bool, variant int) ([][]bool, [4]int) {
+	tileDimensions := len(baseImage)
 
-	tiles := make([]*connection, 0)
-	for directionIndex := 0; directionIndex < 4; directionIndex++ {
-		for id, tile := range d.tiles {
-			if id == tileId || currentTile.connections[directionIndex] != nil {
-				continue
-			}
-			for variant, signature := range tile.signatures {
-				if signature[(directionIndex+2)%4] == v[directionIndex] {
-					conn := connection{
-						tile:      id,
-						variation: variant,
-					}
+	rotation := variant % 4
+	flip := variant / 4
 
-					tiles = append(tiles, &conn)
-					currentTile.connections[directionIndex] = &conn
-					break
-				}
-			}
-		}
-	}
-	return tiles
-}
-
-func (d *Day20) sortTiles() {
-	var id int
-	for id = range d.tiles {
-		break
-	}
-	queue := make([]connection, 0)
-	queue = append(queue, connection{
-		tile:      id,
-		variation: 0,
-	})
-
-	done := make(map[int]struct{})
-	for i := 0; i < len(queue); i++ {
-		if _, ok := done[queue[i].tile]; ok {
-			continue
-		}
-		connections := d.findAdjacentTiles(queue[i].tile, queue[i].variation)
-		for _, connection := range connections {
-			queue = append(queue, *connection)
-			done[queue[i].tile] = struct{}{}
-		}
-	}
-}
-
-func (d *Day20) executeA() (int, []int) {
-	corners := make([]int, 0)
-	res := 1
-	for id, tile := range d.tiles {
-		c := 0
-		for _, connection := range tile.connections {
-			if connection != nil {
-				c++
-			}
-		}
-		if c == 2 {
-			res *= id
-			corners = append(corners, id)
-		}
-	}
-	return res, corners
-}
-
-func (d *Day20) getImageVariant(id, variant int) [][]bool {
-	tile := d.tiles[id]
-	tileDimensions := len(tile.image)
-
+	// rotation
 	image := make([][]bool, 0)
 	for a := 0; a < tileDimensions; a++ {
 		row := make([]bool, 0)
 		for b := 0; b < tileDimensions; b++ {
-			t := tile.image[a][b]
-			switch variant {
+			t := baseImage[a][b]
+			switch rotation {
 			case 1:
-				t = tile.image[a][tileDimensions-1-b]
+				t = baseImage[b][tileDimensions-1-a]
 				break
 			case 2:
-				t = tile.image[b][tileDimensions-1-a]
+				t = baseImage[tileDimensions-1-a][tileDimensions-1-b]
 				break
 			case 3:
-				t = tile.image[tileDimensions-1-b][tileDimensions-1-a]
-				break
-			case 4:
-				t = tile.image[tileDimensions-1-a][b]
-				break
-			case 5:
-				t = tile.image[tileDimensions-1-a][tileDimensions-1-b]
-				break
-			case 6:
-				t = tile.image[b][a]
-				break
-			case 7:
-				t = tile.image[tileDimensions-1-b][a]
+				t = baseImage[tileDimensions-1-b][a]
 				break
 			default:
-				t = tile.image[a][b]
+				t = baseImage[a][b]
 				break
 			}
 			row = append(row, t)
 		}
 		image = append(image, row)
 	}
-	return image
-}
 
-func (d *Day20) resolveVariant(id int) (int, error) {
-	for _, tile := range d.tiles {
-		for _, conn := range tile.connections {
-			if conn != nil && conn.tile == id {
-				return conn.variation, nil
+	// flip
+	newImage := make([][]bool, tileDimensions)
+	for a := 0; a < tileDimensions; a++ {
+		row := make([]bool, tileDimensions)
+		for b := 0; b < tileDimensions; b++ {
+			switch flip {
+			case 1:
+				row[b] = image[a][tileDimensions-1-b]
+
+				break
+			case 2:
+				row[b] = image[tileDimensions-1-a][b]
+				break
+			default:
+				row[b] = image[a][b]
+				break
 			}
 		}
+		newImage[a] = row
 	}
-	return 0, errors.New("could not resolve variant")
+	image = newImage
+
+	return image, d.getEdges(image)
 }
 
-func (d *Day20) getNextTile(con connection, a, b int) []connection {
-	visited := make(map[int]struct{})
-	list := []connection{
-		con,
+func (d *Day20) getEdges(img [][]bool) [4]int {
+	edges := [4]int{}
+	count := len(img)
+	for p := 0; p < count; p++ {
+		if img[0][p] {
+			edges[0] += 1 << (count - 1 - p)
+		}
+		if img[count-1][p] {
+			edges[2] += 1 << (count - 1 - p)
+		}
+		if img[p][count-1] {
+			edges[1] += 1 << (count - 1 - p)
+		}
+		if img[p][0] {
+			edges[3] += 1 << (count - 1 - p)
+		}
 	}
-	cId := con.tile
-	for x := 0; x < d.dimensions-1; x++ {
-		visited[cId] = struct{}{}
-		cTile := d.tiles[cId]
-
-		next := cTile.connections[a]
-		if next == nil {
-			next = cTile.connections[b]
-		}
-		if _, ok := visited[next.tile]; ok {
-			next = cTile.connections[b]
-		}
-		if next == nil {
-			break
-		}
-		cId = next.tile
-		list = append(list, *next)
-	}
-	return list
+	return edges
 }
 
 func (d *Day20) printImage(image [][]bool) {
 	for y := 0; y < len(image); y++ {
 		for x := 0; x < len(image[y]); x++ {
 			if image[y][x] {
-				fmt.Print("#")
+				fmt.Print("0")
 			} else {
 				fmt.Print(".")
 			}
@@ -254,29 +150,93 @@ func (d *Day20) printImage(image [][]bool) {
 	fmt.Print("\n")
 }
 
-func (d *Day20) executeB(corners []int) int {
-	corners[0] = 1951
-	variant, err := d.resolveVariant(corners[0])
-	if err != nil {
-		return -1
-	}
-	initConn := connection{
-		tile:      corners[0],
-		variation: variant,
-	}
-	rows := d.getNextTile(initConn, 2, 0)
-	for _, rowConn := range rows {
-		cols := d.getNextTile(rowConn, 1, 3)
-		for _, t := range cols {
-			fmt.Println(t.tile, t.variation)
-			d.printImage(d.getImageVariant(t.tile, t.variation))
+func (d *Day20) isAdjacentTile(edges [4]int, checkTile *tile) (int, int, bool) {
+	for variation, cmpEdges := range checkTile.edges {
+		for r := 0; r < 4; r++ {
+			if edges[r] == cmpEdges[(r+2)%4] {
+				return r, variation, true
+			}
 		}
-		//fmt.Println(cols)
-		break
 	}
+	return -1, -1, false
+}
 
-	//fmt.Println(corner)
-	return 1
+func (d *Day20) findAdjacentTile(searchTile *tile, variation int) []connection {
+	connections := make([]connection, 0)
+	edges := searchTile.edges[variation]
+	for id, cmpTile := range d.tiles {
+		if searchTile == cmpTile {
+			continue
+		}
+
+		dir, variation, adj := d.isAdjacentTile(edges, cmpTile)
+		if adj {
+			connections = append(connections, connection{
+				to:        id,
+				variation: variation,
+				direction: dir,
+			})
+		}
+	}
+	return connections
+}
+
+func (d *Day20) executeA() (int, []int) {
+	list := make([]int, 0)
+	count := 1
+	for id, t := range d.tiles {
+		if len(d.findAdjacentTile(t, 0)) == 2 {
+			count *= id
+			list = append(list, id)
+		}
+	}
+	return count, list
+}
+
+func (d *Day20) getFullMap(startTile int) [][]int {
+	passed := make(map[int]struct{})
+	baseConn := connection{
+		to:        startTile,
+		variation: 0,
+	}
+	fullMap := make([][]int, d.dimensions)
+	for y := 0; y < d.dimensions; y++ {
+		rowConn := baseConn
+		row := make([]int, d.dimensions)
+		row[0] = baseConn.to
+		for x := 1; x <= d.dimensions; x++ {
+			passed[baseConn.to] = struct{}{}
+
+			for _, conn := range d.findAdjacentTile(d.tiles[baseConn.to], baseConn.variation) {
+				if _, ok := passed[conn.to]; ok {
+					continue
+				}
+				if conn.direction == 1 || conn.direction == 3 {
+					baseConn = conn
+					row[x] = conn.to
+				}
+			}
+		}
+		for _, conn := range d.findAdjacentTile(d.tiles[rowConn.to], rowConn.variation) {
+			if _, ok := passed[conn.to]; ok {
+				continue
+			}
+			if conn.direction == 2 || conn.direction == 0 {
+				baseConn = conn
+			}
+		}
+		fullMap[y] = row
+	}
+	return fullMap
+}
+
+func (d *Day20) executeB(corners []int) int {
+	fullMap := d.getFullMap(1951)
+	fRow := fullMap[0]
+
+	fmt.Println(fRow)
+
+	return 0
 }
 
 func (d *Day20) Handle(s string) ([]string, error) {
@@ -284,18 +244,9 @@ func (d *Day20) Handle(s string) ([]string, error) {
 	if err != nil {
 		return nil, err
 	}
-
-	//for id, t := range d.tiles {
-	//	fmt.Println(id)
-	//	fmt.Println(t.signatures)
-	//	fmt.Println()
-	//}
-
-	d.sortTiles()
-
 	results := make([]string, 0)
-	a, _ := d.executeA()
+	a, corners := d.executeA()
 	results = append(results, fmt.Sprintf("%d", a))
-	//results = append(results, fmt.Sprintf("%d", d.executeB(corners)))
+	results = append(results, fmt.Sprintf("%d", d.executeB(corners)))
 	return results, nil
 }
