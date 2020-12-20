@@ -12,6 +12,13 @@ import (
 type Day20 struct {
 	tiles      map[int]*tile
 	dimensions int
+	monsterMap monsterMap
+}
+
+type monsterMap struct {
+	imageMap [][2]int
+	width    int
+	height   int
 }
 
 type tile struct {
@@ -58,6 +65,21 @@ func (d *Day20) init(s string) error {
 		}
 	}
 	d.dimensions = int(math.Sqrt(float64(len(d.tiles))))
+
+	monster := "                  #\n#    ##    ##    ### \n #  #  #  #  #  #   "
+	d.monsterMap = monsterMap{
+		imageMap: make([][2]int, 0),
+	}
+	for y, mLines := range strings.Split(monster, "\n") {
+		for x, p := range strings.Split(mLines, "") {
+			if p == "#" {
+				d.monsterMap.imageMap = append(d.monsterMap.imageMap, [2]int{x, y})
+				d.monsterMap.width = int(math.Max(float64(d.monsterMap.width), float64(x)))
+				d.monsterMap.height = int(math.Max(float64(d.monsterMap.height), float64(y)))
+			}
+		}
+	}
+
 	return nil
 }
 
@@ -281,17 +303,50 @@ func (d *Day20) buildFullImage(fullMap [][]connection) [][]bool {
 	return fullImage
 }
 
+func (d *Day20) findMonster(image [][]bool) int {
+	monsterCount := 0
+	height := len(image)
+	width := len(image[0])
+	for y := 0; y < height-d.monsterMap.height; y++ {
+		for x := 0; x < width-d.monsterMap.width; x++ {
+			foundOne := true
+			for _, parts := range d.monsterMap.imageMap {
+				if !image[y+parts[1]][x+parts[0]] {
+					foundOne = false
+				}
+			}
+			if foundOne {
+				monsterCount++
+			}
+		}
+	}
+	return monsterCount
+}
+
+func (d *Day20) countRoughWater(image [][]bool) int {
+	count := 0
+	for _, row := range image {
+		for _, p := range row {
+			if p {
+				count++
+			}
+		}
+	}
+	return count
+}
+
 func (d *Day20) executeB(corners []int) int {
 	startTile, _ := d.findTopLeftTile(corners)
 	fullMap := d.getFullMap(startTile)
 	fullImage := d.buildFullImage(fullMap)
-
 	for i := 0; i < 8; i++ {
 		img, _ := d.getImageVariant(fullImage, i)
-		d.printImage(img)
+		mCount := d.findMonster(img)
+		if mCount > 0 {
+			return d.countRoughWater(img) - len(d.monsterMap.imageMap) * mCount
+		}
 	}
-
-	return 0
+	return -1
 }
 
 func (d *Day20) Handle(s string) ([]string, error) {
