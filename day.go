@@ -28,6 +28,7 @@ func getDays() []Day {
 		&solutions.Day18{},
 		&solutions.Day19{},
 		&solutions.Day20{},
+		&solutions.Day21{},
 	}
 	return days
 }
