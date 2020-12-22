@@ -42,21 +42,22 @@ func (h *history) addToHistory(a, b queue) {
 	h.history = append(h.history, history)
 }
 
+func (h *history) compareIntSlice(a, b *[]int) bool {
+	if len(*a) != len(*b) {
+		return false
+	}
+	for i, aV := range *a {
+		if aV != (*b)[i] {
+			return false
+		}
+	}
+	return true
+}
+
 func (h *history) checkHistory(a, b queue) bool {
-OUTER:
 	for _, history := range h.history {
-		if len(history[0]) != len(a.cards) || len(history[1]) != len(b.cards) {
-			continue OUTER
-		}
-		for i, aCard := range a.cards {
-			if aCard != history[0][i] {
-				continue OUTER
-			}
-		}
-		for i, bCard := range b.cards {
-			if bCard != history[1][i] {
-				continue OUTER
-			}
+		if !h.compareIntSlice(&a.cards, &history[0]) && !h.compareIntSlice(&b.cards, &history[1]) {
+			continue
 		}
 		return true
 	}
