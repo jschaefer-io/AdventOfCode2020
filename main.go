@@ -9,8 +9,8 @@ import (
 func main() {
 
 	days := getDays()
-	start := 22
-	max := 22
+	start := 23
+	max := 23
 	accTime := .0
 	for i := start; i <= max; i++ {
 		fName := fmt.Sprintf("./inputs/%d.txt", i)
